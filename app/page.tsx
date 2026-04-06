@@ -13,6 +13,7 @@ import { AddExpenseModal } from "@/components/add-expense-modal";
 import { MobileHeader } from "@/components/mobile-header";
 import { BudgetView } from "@/components/budget-view";
 import { SettingsView } from "@/components/settings-view";
+import { useAuth } from "@/lib/auth-context";
 import {
   Select,
   SelectContent,
@@ -57,6 +58,7 @@ const viewTitles: Record<NavView, { title: string; description: string }> = {
 };
 
 export default function ExpenseTracker() {
+  const { user, loading: authLoading } = useAuth();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [budgetBundle, setBudgetBundle] = useState<BudgetBundle | null>(null);
   const [budgetsLoading, setBudgetsLoading] = useState(true);
@@ -83,8 +85,10 @@ export default function ExpenseTracker() {
   }, []);
 
   useEffect(() => {
-    loadExpenses();
-  }, [loadExpenses]);
+    if (!authLoading && user) {
+      loadExpenses();
+    }
+  }, [loadExpenses, authLoading, user]);
 
   const loadBudgets = useCallback(async () => {
     try {
@@ -100,8 +104,10 @@ export default function ExpenseTracker() {
   }, []);
 
   useEffect(() => {
-    loadBudgets();
-  }, [loadBudgets]);
+    if (!authLoading && user) {
+      loadBudgets();
+    }
+  }, [loadBudgets, authLoading, user]);
 
   const monthlyBudgetTotal = budgetBundle?.monthlyTotal?.totalLimit ?? 0;
 
@@ -113,7 +119,7 @@ export default function ExpenseTracker() {
   const handleAddExpense = async (expense: Omit<Expense, "id">) => {
     try {
       const created = await createExpenseApi(expense);
-      setExpenses((prev) => [created, ...prev]);
+      setExpenses((prev: Expense[]) => [created, ...prev]);
       await loadBudgets();
       toast.success("Expense added");
     } catch (e) {
@@ -127,7 +133,7 @@ export default function ExpenseTracker() {
   const handleDeleteExpense = async (id: string) => {
     try {
       await deleteExpenseApi(id);
-      setExpenses((prev) => prev.filter((e) => e.id !== id));
+      setExpenses((prev: Expense[]) => prev.filter((e: Expense) => e.id !== id));
       await loadBudgets();
       toast.success("Expense deleted");
     } catch (e) {
@@ -137,7 +143,7 @@ export default function ExpenseTracker() {
     }
   };
 
-  const currentView = viewTitles[activeView];
+  const currentView = viewTitles[activeView as NavView];
 
   return (
     <AuthGuard>

@@ -25,9 +25,6 @@ export async function apiFetch(
 
   if (res.status === 401) {
     removeToken()
-    if (typeof window !== "undefined") {
-      window.location.href = "/login"
-    }
     throw new Error("Session expired")
   }
 
